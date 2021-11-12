@@ -1,6 +1,5 @@
 import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
-import eq from "lodash.isequal";
 
 export const meowPluginKey = new PluginKey("meow");
 
@@ -17,33 +16,20 @@ export function meowPlugin() {
       },
     },
     state: {
-      init: () => ({ decos: DecorationSet.empty, ranges: [] }),
+      init: () => ({ decos: DecorationSet.empty }),
       apply: (tr) => {
         const ranges = [];
 
-        tr.doc.forEach((node, pos) => {
-          if (node.attrs.highlight) {
-            ranges.push([pos, pos + node.nodeSize]);
+        tr.doc.forEach((paragraph, pos) => {
+          if (paragraph.textContent.includes("meow")) {
+            ranges.push([pos, pos + paragraph.nodeSize]);
           }
         });
 
         return {
-          ranges,
           decos: DecorationSet.create(tr.doc, ranges.map(createProblemDeco)),
         };
       },
-    },
-    appendTransaction: (transactions, oldState, newState) => {
-      const paras = [];
-
-      newState.doc.forEach((node, pos) => {
-        paras.push({ pos, node });
-      });
-
-      return paras.reduce((tr, { pos, node }) => {
-        const highlight = node.textContent.includes("meow");
-        return tr.setNodeMarkup(pos, undefined, { highlight });
-      }, newState.tr);
     },
   });
 }

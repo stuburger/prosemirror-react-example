@@ -1,32 +1,12 @@
 import React, { useRef, useReducer, useEffect } from "react";
-import { Schema } from "prosemirror-model";
-import { EditorState, Plugin, PluginKey } from "prosemirror-state";
-import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
+import { EditorState } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
 import { exampleSetup } from "prosemirror-example-setup";
-
-import "./styles.css";
+import { schema } from "./schema";
+import { woofPlugin } from "./woofPlugin";
 import { meowPlugin } from "./meowPlugin";
 
-const schema = new Schema({
-  nodes: {
-    doc: {
-      content: `paragraph+`,
-    },
-    paragraph: {
-      attrs: {
-        highlight: { default: false },
-      },
-      content: "text*",
-      parseDOM: [{ tag: "p" }],
-      toDOM() {
-        return ["p", { class: "paragraph" }, 0];
-      },
-    },
-    text: {
-      toDOM: () => ["span", 0],
-    },
-  },
-});
+import "./styles.css";
 
 function reducer(state, action) {
   if (action.type === "transaction") {
@@ -40,7 +20,7 @@ function init() {
   return {
     editorState: EditorState.create({
       schema,
-      plugins: [...exampleSetup({ schema }), meowPlugin()],
+      plugins: [...exampleSetup({ schema }), meowPlugin(), woofPlugin()],
     }),
   };
 }

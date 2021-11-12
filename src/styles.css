@@ -661,3 +661,7 @@ li.commentText + li.commentText {
 .problem {
   border-left: 3px solid red;
 }
+
+.strike {
+  text-decoration: line-through;
+}

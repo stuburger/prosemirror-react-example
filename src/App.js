@@ -1,31 +1,12 @@
 import React from "react";
-import { Schema } from "prosemirror-model";
-import { EditorState, Plugin } from "prosemirror-state";
+import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { exampleSetup } from "prosemirror-example-setup";
+import { schema } from "./schema";
+import { woofPlugin } from "./woofPlugin";
+import { meowPlugin } from "./meowPlugin";
 
 import "./styles.css";
-
-const schema = new Schema({
-  nodes: {
-    doc: {
-      content: `paragraph+`,
-    },
-    paragraph: {
-      attrs: {
-        highlight: { default: false },
-      },
-      content: "text*",
-      parseDOM: [{ tag: "p" }],
-      toDOM() {
-        return ["p", { class: "paragraph" }, 0];
-      },
-    },
-    text: {
-      toDOM: () => ["span", 0],
-    },
-  },
-});
 
 export default class App extends React.Component {
   constructor(props) {
@@ -36,7 +17,7 @@ export default class App extends React.Component {
     this.state = {
       editorState: EditorState.create({
         schema,
-        plugins: [...exampleSetup({ schema }), meowPlugin()],
+        plugins: [...exampleSetup({ schema }), meowPlugin(), woofPlugin()],
       }),
     };
   }
