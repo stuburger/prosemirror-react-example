@@ -657,3 +657,7 @@ li.commentText + li.commentText {
   padding-left: 5px;
   border-left: 3px solid #eee;
 }
+
+.problem {
+  border-left: 3px solid red;
+}
