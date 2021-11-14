@@ -27,7 +27,7 @@ A state update demonstrated in 2 lines:
 let state = EditorState.create(...)
 
 // we update our state
-let transaction = state.tr.insertText(...)
+let transaction = state.tr.insertText('meow')
 state = state.apply(transaction)
 ```
 
@@ -56,7 +56,7 @@ This means after we create a transaction we can update it using a fluent api.
 let state = EditorState.create(...)
 
 const transaction = state.tr
-  .insertText(...)
+  .insertText('meow')
   .setSelection(...)
   .setMeta(...)
 
@@ -71,7 +71,7 @@ After seeing how Prosemirror state is updated in isolation it might be clearer t
 function Editor() {
   const [editorState, setEditorState] = useState(() => EditorState.create(...))
 
-  function addMeow() {
+  function writeMeow() {
     const tr = editorState.tr.insertText('meow')
     setEditorState(editorState.apply(tr))
   }
@@ -79,17 +79,66 @@ function Editor() {
   return (
     <>
       <span>I you just say meow? {editorState.doc.textContent.includes('meow') ? 'Yes' : 'No'}</span>
-      <button onClick={addMeow}>Say Meow!</button>
+      <button onClick={writeMeow}>Say Meow!</button>
     </>
   )
 }
 ```
 
-Seeing how Prosemirror state can be integrated into our React application is not only helpful to understand for the sake of the integration, but also for the sake of illustrating how to actually update Prosemirror state. But at this point we we wouldn't be able to see any text content. Thats because we don't have an EditorView yet.
+Seeing how Prosemirror state can be integrated into our React application is not only helpful to understand for the sake of the integration, but also for the sake of illustrating how to actually update Prosemirror state. But at this point we we wouldn't be able to see any text content. Thats because we don't have an EditorView yet. Let's see how we might integrate an EditorView into our React setup.
 
-### Adding an EditorView
+## Adding an EditorView
 
-### Other React integrations
+Prosemirror was created to remain agnostic of frontend framework and you'll find most examples working with vanilla JavaScript. As we're thinking and working in React land, we'll want to do things a implement things a little differently. But first lets see how a view would be updated with no React to work around. We simply need only add to more lines of code to our 2 line state update example:
+
+```js
+let state = EditorState.create(...)
+// create a view - supplying dom node to append to and initial state
+let view = new EditorView(elem, { state })
+
+let transaction = state.tr.insertText('meow')
+state = state.apply(transaction)
+
+// pass our newly updated state to our view
+view.updateState(state)
+```
+
+This example is extremely simplified but we're already starting to see the bigger picture here. Next lets see how this fits into React:
+
+```js
+function Editor() {
+  const view = useRef()
+  const container = useRef()
+  const [editorState, setEditorState] = useState(() => EditorState.create(...))
+
+  function apply(tr) {
+    setEditorState(editorState.apply(tr))
+  }
+
+  useEffect(() => {
+    view.current = new EditorView(container.current, {
+      state: editorState,
+      dispatchTransaction: (tr) => apply(tr),
+    });
+
+    return () => view.current.destroy();
+  }, []);
+
+  useEffect(() => {
+    view.current.updateState(editorState);
+  }, [editorState]);
+
+  return <div ref={container} />
+}
+```
+
+1. Now we have little more going on, so lets go through it line by line. The first thing to notice is that we've created a little helper function, `apply()`, that can be called with a transaction and simply applies that transaction to the current editorState and updates our component's local state with the new editorState that results from applying the transaction. Sweet. While this was not necessary for the example, we have just improved readability a bit and its more convenient than calling `setEditorState(editorState.apply(tr))` if we want to update editorState in other places.
+2. Notice the inclusion of the EditorView that is instantiated inside the first `useEffect`. After the initial render and it is bound to the div contained in the `current` property of the `container` ref. When our component unmounts we call `destroy()` on the EditorView instance which removes it from the DOM. But the really important line of code to take note of here is the `dispatchTransaction` property supplied to the EditorView. If we had not done this, the default behavior would be for `dispatchTransaction` to simply run `view.updateState(view.state.apply(tr))`. But of course this would entirely bypass our React component state! Instead, we tell Prosemirror to use our version of `dispatchTransaction` which does nothing more than update our component's state.
+3. The second `useEffect` contains only one line of code, but its where some important magic happens. As I said in the previous point our version of `dispatchTransaction` only updates some React state. We know that updating state in React causes a render and our `useEffect` to be called (or `componentDidUpdate` in a class component) which finally gives us a place to complete the integration with React and call `updateState()` on the EditorView instance.
+
+So here you can see how we've "plugged" Prosemirror into our component's state lifecycle.
+
+## Other React integration examples
 
 It may be worth digging into the code for libraries like [Tiptap](https://tiptap.dev/) and [Remirror](https://remirror.io/). These are not necessarily the easiest code bases to to pick apart.
 
