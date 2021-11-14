@@ -26,6 +26,9 @@ export default class App extends React.Component {
     const { editorState } = this.state;
     this.view = new EditorView(this.$container.current, {
       state: editorState,
+      // dispatchTransaction defaults to simply applying the transaction to the current view state.
+      // Instead we want to intercept the transaction here and update our component state.
+      // This way we gain access to the editor state inside our react component.
       dispatchTransaction: (tr) => this.apply(tr),
       handleClick: (node, pos) => console.log("view clicked", { node, pos }),
     });
