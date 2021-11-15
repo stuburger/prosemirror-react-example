@@ -8,9 +8,7 @@ The Prosemirror [library guide](https://prosemirror.net/docs/guide/) is the obvi
 
 Another resource that is invaluable is the [prosemirror forums](https://discuss.prosemirror.net). I found that reading them - in no particular order - can be extremely beneficial to speed up learning. Many of the threads act as windows into learning journeys of other developers. I would click into a thread that looked interesting, read it, try to understand as much as possible and then move onto another. Often the questions are as helpful as their answers. Furthermore, there are some extremely useful discussions in the forums started by the author of Prosemirror that help contextualize the Prosemirror concepts that (in my opinion) the rest of the documentation takes for granted. For example, I had an aha moment when I realized that Plugin state and how it is updated works very similar to Redux reducers. Later on I found [this thread](https://discuss.prosemirror.net/t/discussion-the-limits-of-actions-and-reducers/551) which really helped round out my understanding of Prosemirror architecture and how Redux and Prosemirror are built on similar concepts - similar, but not the same. That said, to point out caveats, gotchas and differences at this point in your learning journey would only serve to confuse. Those details will come to you as you learn more about Prosemirror.
 
-I hope this repo can serve as an additional learning resource to supplement existing docs. This readme assumes you've read the library guide at least once.
-
-Mostly this is aimed at newcomers to Prosemirror - to help you pick up Prosemirror concepts by framing them in terms more familiar to you - especially if you already know React.
+This readme assumes you've read the library guide at least once. I hope it serves as an additional resource to anyone who stumbles upon it. Finally, this little guide is primarily written for newcomers to Prosemirror and aims to help you pick up Prosemirror concepts by framing them in terms more familiar to you.
 
 ## Why React?
 
@@ -24,9 +22,9 @@ So why cant I just run `npm -i prosemirror` and be done with it? This is what th
 
 There are 4 core modules that you should care about when you start to learn Prosemirror. This example repo will cover, at least at the highest of levels, the first 3.
 
-- `prosemirror-state` - Everything to do with state. Also Plugins (which are a part of state).
+- `prosemirror-state` - Everything to do with state. Also Plugins.
 - `prosemirror-model` - Allows us to define schemas that our state must conform to. Also provides building blocks such as Nodes, Marks, Slices and Fragments that make up our document state.
-- `prosemirror-view` - Allows us to create EditorView instances, the rendering engine of Prosemirror. An EditorView declaratively renders whatever state is supplied to it. It also dispatches events that originate from user actions such as clicks and key presses.
+- `prosemirror-view` - Allows us to create EditorView instances that are like the rendering engine of Prosemirror. An EditorView declaratively renders whatever state is supplied to it. It also dispatches events that originate from user actions such as clicks and key presses.
 - `prosemirror-transform` - While **not covered** here, this is the module that underpins the functionality that allows us to create [Transactions](https://prosemirror.net/docs/ref/#state.Transaction) that update state in a way that allows changes to be recorded and replayed. There is a lot of fun to be had here, but there is a lot of API to become acquainted with. In a second we'll see how a Transaction is created and used, but we wont go much deeper than that.
 
 ## `prosemirror-state`
@@ -88,7 +86,7 @@ After seeing how Prosemirror state is updated in isolation it might be clearer t
 function Editor() {
   const [editorState, setEditorState] = useState(() => EditorState.create(...))
 
-  function writeMeow() {
+  function sayMeow() {
     const tr = editorState.tr.insertText('meow')
     setEditorState(editorState.apply(tr))
   }
@@ -96,7 +94,7 @@ function Editor() {
   return (
     <>
       <span>I you just say meow? {editorState.doc.textContent.includes('meow') ? 'Yes' : 'No'}</span>
-      <button onClick={writeMeow}>Say Meow!</button>
+      <button onClick={sayMeow}>Say Meow!</button>
     </>
   )
 }
@@ -155,7 +153,9 @@ Now we have little more going on, so lets go through it bit by bit.
 2. Notice the inclusion of the EditorView that is instantiated inside the first `useEffect` after the initial render and it is bound to the div contained in the `current` property of the `container` ref. When our component unmounts we call `destroy()` on the EditorView instance which removes it from the DOM. But the **really important** line of code to take note of here is the `dispatchTransaction` property supplied to the EditorView. If we had not done this, the default behavior would be for `dispatchTransaction` to simply run `view.updateState(view.state.apply(tr))`. This would cause the view state to be updated, but of course this would entirely bypass our React component state! Instead, we tell Prosemirror to use our version of `dispatchTransaction` which does nothing more than update our component's state.
 3. The second `useEffect` contains only one line of code, but its where some important magic happens. As I said in the previous point, our version of `dispatchTransaction` only updates some React state. We know that updating state in React causes a render and the callback in our `useEffect` to be executed (or `componentDidUpdate` in a class component) which finally gives us a place to complete the integration with React and call `updateState()` on the EditorView instance.
 
-So here you can see how we've "plugged" Prosemirror into our component's state lifecycle.
+So here you can see how we've "plugged" Prosemirror into our component's state lifecycle. Here is an altered version of the data flow diagram from the Prosemirror library guide:
+
+![Data flow](/data-flow-react-pm.jpeg)
 
 ## Schemas (`prosemirror-model`)
 
@@ -210,7 +210,7 @@ new Plugin({
 });
 ```
 
-- **Add state:** A plugin can define its own state and act as a reducer (think Redux reducers or React's useReducer hook) by intercepting transactions before they are applied to the EditorState and deriving new state from those transactions. A common use case for plugin state is simply to store some set of decorations to applied to the Prosemirror doc. But plugin state can be use to store ANY data you like - because plugin state observes editor transactions it allows the plugin to update its state and remain in sync with the EditorState. Below is a basic example of a plugin that simply counts all the transactions that come through it.
+- **Add state:** A plugin can define its own state and act as a reducer (think Redux reducers or React's useReducer hook) by intercepting transactions before they are applied to the EditorState and deriving new state from those transactions. A common use case for plugin state is simply to store a set of decorations to applied to the Prosemirror doc. But plugin state can be used to store ANY data you like. Because plugin state observes editor transactions it allows the plugin to update its state and remain in sync with the EditorState. Below is an example of a plugin that simply counts all the transactions that come through it.
 
 ```js
 new Plugin({
